@@ -1,21 +1,133 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
-
-<form action="" style="text-align: center; margin: 0 auto;">
-  <label for="aeskey" style="font-size: 20px;">What's the secret?</label>
-  <input type="text" name="aeskey" id="aeskey" style="width: 300px; height: 40px; font-size: 20px;">
-  <input type="submit" value="Continue" onclick="decrypt(); return false;" style="width: 100px; height: 40px; font-size: 20px;">
-</form>
-
-<script>
-  function encrypt(unencrypted) {
-    var aeskey = document.getElementById("aeskey").value;
-    var encrypted = CryptoJS.AES.encrypt(unencrypted, aeskey).toString();
-    console.log(encrypted);
+<html>
+<head>
+  <title>Chatbot Website</title>
+  <style>
+    #chat-feed {
+      width: 100%;
+      height: 80%;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .user-message {
+      padding: 10px;
+      border-radius: 10px;
+      background-color: #F5F5F5;
+      margin-bottom: 10px;
+      text-align: right;
+      margin-left: auto;
+    }
+    .bot-message {
+      padding: 10px;
+      border-radius: 10px;
+      background-color: #E0E0E0;
+      margin-bottom: 10px;
+      text-align: left;
+      margin-right: auto;
+    }
+    #message-bar {
+      width: 100%;
+      height: 20%;
+      display: flex;
+      align-items: center;
+    }
+    #message-input {
+      width: 90%;
+      padding: 10px;
+      border-radius: 10px;
+      font-size: 20px;
+    }
+    #submit-button {
+      width: 10%;
+      padding: 10px;
+      border-radius: 10px;
+      background-color: #E0E0E0;
+      font-size: 20px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: clip;
+    }
+  </style>
+</head>
+<body>
+  <div id="chat-feed">
+    <div class="bot-message">
+      Hello, I'm a multilingual artificial intelligence doing my best to help lawyers provide the best legal assessments for their clients, anywhere in the world. How can I help you?
+    </div>
+  </div>
+  <div id="message-bar">
+    <input type="text" id="message-input" placeholder="Type any question...">
+    <button id="submit-button">➥</button>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.2/rollups/aes.js"></script>
+  <script>
+  function encrypt(unencrypted, aeskey) {
+    return CryptoJS.AES.encrypt(unencrypted, aeskey).toString();
   }
-  function decrypt() {
-    var aeskey = document.getElementById("aeskey").value;
-    var encrypted = "U2FsdGVkX1+AtBPwUHLvxhahIzJI+6vZvBSMiOhZpswF7CM9VjwNrK1A8VRFag9wGLeSd4khW04SjQCCbud80cDJ9EouHoRKkOqtl8T6t5eqBD8dqRnnlGKKt75n11jSTBSV8m4T4BFWvVOel+hK0Q==";
-    var unencrypted = CryptoJS.AES.decrypt(encrypted, aeskey).toString(CryptoJS.enc.Utf8);
-    window.location.href = unencrypted;
+  function decrypt(encrypted, aeskey) {
+    return CryptoJS.AES.decrypt(encrypted, aeskey).toString(CryptoJS.enc.Utf8);
   }
-</script>
+  </script>
+  <script>
+    let messageInput = document.getElementById("message-input");
+    let submitButton = document.getElementById("submit-button");
+    let chatFeed = document.getElementById("chat-feed");
+    if (window.conversation === undefined) {
+        window.conversation = `Background: 
+You're name is 'Robotorney', you're a multilingual, highly intelligent artificial intelligence helping lawyers arrive that the correct legal advice for their clients.
+You are quite familiar with the legal specifics across the world, and do your best to answer questions as accurate as you can. 
+But you don't know everything, and the lawyers are quite knowledgable themselves, so let them know if you're unsure about something and leverage their knowledge of the specifics as well.
+But try to articulate your best guess in general, but clarify that you might be wrong when you're unsure. The lawyer may talk to you in any language, and you will respond in the same language.
+Read their statements carefully, and reason step by step to arrive at a response that is as accurate and consistent as possible.
+
+Your conversation with the lawyer starts now.
+
+Robotorney: 'Hello, I'm a multilingual artificial intelligence doing my best to help lawyers provide the best legal assessments for their clients, anywhere in the world. How can I help you?'
+`;
+    }
+    submitButton.addEventListener("click", () => {
+      let userMessage = document.createElement("div");
+      userMessage.className = "user-message";
+      userMessage.innerHTML = messageInput.value;
+      chatFeed.appendChild(userMessage);
+      messageInput.value = "";
+
+      let botMessage = document.createElement("div");
+      botMessage.className = "bot-message";
+      botMessage.innerHTML = '...';
+      chatFeed.appendChild(botMessage);
+      var apiRequest = new XMLHttpRequest();
+     	apiRequest.open("POST", "https://api.openai.com/v1/completions", false);
+    	apiRequest.setRequestHeader("Content-Type", "application/json");
+      if (window.apikey === undefined) {
+          var aeskey = prompt("What's the secret?")
+          var encrypted = "U2FsdGVkX1/sVwKJXIYsuuW+s9noaHVi1134Cs7FiiO2LpGBtgeXznvK9eWV8o+rfuUw3aeFQNBu157cwS9MlqZFCdDI4u4CVgUQ0XnGPgk=";
+          var apikey = decrypt(encrypted, aeskey);
+          if (apikey.startsWith('sk-A')) {
+            window.apikey = apikey;
+          } else {
+            window.location.reload();
+          }
+      }
+	    apiRequest.setRequestHeader("Authorization", "Bearer " + window.apikey);
+	    document.ar = apiRequest;
+      window.conversation = window.conversation + `\nLawyer: '${userMessage.innerHTML}'\n Robotorney: '`;
+	    apiRequest.send(JSON.stringify({
+        "model": "text-davinci-003",
+        "prompt": window.conversation,
+	      "temperature": 0.1,
+	      "max_tokens": 1000,
+	      "stop": "'"
+	    }))
+      var response = JSON.parse(apiRequest.response)["choices"]["0"]["text"];	
+      botMessage.innerHTML = response;
+      window.conversation = window.conversation + response + "'";
+    });
+    messageInput.addEventListener("keyup", event => {
+      if (event.keyCode === 13) {
+        submitButton.click();
+      }
+    });
+  </script>
+</body>
+</html>
